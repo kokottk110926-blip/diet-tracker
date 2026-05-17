@@ -33,28 +33,31 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    let { data: existingUser } = await supabase
+    // Step 1: upsert — 存在しなければ作成、存在すれば何もしない
+    const { error: upsertError } = await supabase
+      .from('users')
+      .upsert({ name: trimmed }, { onConflict: 'name', ignoreDuplicates: true })
+
+    if (upsertError) {
+      setError(`エラー(upsert): ${upsertError.message}`)
+      setLoading(false)
+      return
+    }
+
+    // Step 2: 名前でユーザーを取得（新規・既存どちらでも動く）
+    const { data: user, error: selectError } = await supabase
       .from('users')
       .select('*')
       .eq('name', trimmed)
-      .maybeSingle()
+      .single()
 
-    if (!existingUser) {
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({ name: trimmed })
-        .select()
-        .single()
-
-      if (createError || !newUser) {
-        setError('ユーザーの作成に失敗しました。Supabaseの設定を確認してください。')
-        setLoading(false)
-        return
-      }
-      existingUser = newUser
+    if (selectError || !user) {
+      setError(`エラー(select): ${selectError?.message ?? '不明なエラー'}`)
+      setLoading(false)
+      return
     }
 
-    setUser(existingUser)
+    setUser(user)
     router.push('/dashboard')
     setLoading(false)
   }
