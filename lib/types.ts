@@ -1,7 +1,9 @@
 export interface User {
-  id: string
+  id: string | number
   name: string
   height: number | null
+  age: number | null
+  gender: 'male' | 'female' | null
   goal_weight: number | null
   goal_fat: number | null
   created_at: string

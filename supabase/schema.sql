@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS public.users (
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height     REAL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS height      REAL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS age         INTEGER;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS gender      TEXT;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal_weight REAL;
-ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal_fat   REAL;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS goal_fat    REAL;
 
 CREATE TABLE IF NOT EXISTS public.records (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,

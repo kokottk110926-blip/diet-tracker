@@ -6,20 +6,9 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/lib/context'
 import { BodyRecord } from '@/lib/types'
+import { calcBMI, bmiInfo, calcBMR, calcBodyAge } from '@/lib/calc'
 
 const ProgressChart = dynamic(() => import('@/components/ProgressChart'), { ssr: false })
-
-function calcBMI(weight: number, height: number) {
-  const h = height / 100
-  return Math.round((weight / (h * h)) * 10) / 10
-}
-
-function bmiInfo(bmi: number): { label: string; color: string } {
-  if (bmi < 18.5) return { label: '低体重', color: 'text-blue-500' }
-  if (bmi < 25) return { label: '普通体重', color: 'text-green-600' }
-  if (bmi < 30) return { label: '肥満(1度)', color: 'text-yellow-600' }
-  return { label: '肥満(2度以上)', color: 'text-red-500' }
-}
 
 function StatCard({
   label,
@@ -87,9 +76,12 @@ export default function DashboardPage() {
   if (authLoading || !user) return null
 
   const latest = recentRecords[0]
-  const bmi =
-    latest?.weight && user.height ? calcBMI(latest.weight, user.height) : null
+  const bmi     = latest?.weight && user.height ? calcBMI(latest.weight, user.height) : null
   const bmiMeta = bmi ? bmiInfo(bmi) : null
+  const bmr     = latest?.weight && user.height && user.age && user.gender
+    ? calcBMR(latest.weight, user.height, user.age, user.gender) : null
+  const bodyAge = latest?.fat && bmi && user.age && user.gender
+    ? calcBodyAge(latest.fat, bmi, user.age, user.gender) : null
 
   const chartData = (() => {
     const map = Object.fromEntries(chartRecords.map((r) => [r.date, r]))
@@ -126,7 +118,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         <StatCard
           label="体重"
           value={latest?.weight ? `${latest.weight}kg` : '—'}
@@ -145,6 +137,19 @@ export default function DashboardPage() {
           sub={bmiMeta?.label || (user.height ? '未記録' : '設定で入力')}
           accent="bg-gradient-to-br from-green-50 to-green-100 text-green-700"
           subColor={bmiMeta?.color}
+        />
+        <StatCard
+          label="基礎代謝"
+          value={bmr ? `${bmr}kcal` : '—'}
+          sub={!user.age || !user.gender ? '年齢・性別を設定' : '安静時消費カロリー'}
+          accent="bg-gradient-to-br from-teal-50 to-teal-100 text-teal-700"
+        />
+        <StatCard
+          label="体年齢"
+          value={bodyAge ? `${bodyAge}歳` : '—'}
+          sub={!user.age || !user.gender ? '年齢・性別を設定' : bodyAge && user.age ? (bodyAge < user.age ? `実年齢より${user.age - bodyAge}歳若い` : bodyAge > user.age ? `実年齢より${bodyAge - user.age}歳上` : '実年齢と同じ') : ''}
+          accent="bg-gradient-to-br from-rose-50 to-rose-100 text-rose-700"
+          subColor={bodyAge && user.age ? (bodyAge < user.age ? 'text-green-600' : bodyAge > user.age ? 'text-red-500' : undefined) : undefined}
         />
         <StatCard
           label="目標まで"

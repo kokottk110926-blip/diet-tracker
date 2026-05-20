@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/lib/context'
 import { BodyRecord } from '@/lib/types'
+import { calcBMI, bmiInfo, calcBMR, calcBodyAge } from '@/lib/calc'
 
 function LogForm() {
   const { user, loading: authLoading } = useUser()
@@ -114,7 +115,6 @@ function LogForm() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            max={today}
             className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
           />
           {checkingDate && (
@@ -186,6 +186,57 @@ function LogForm() {
           />
           <p className="text-xs text-gray-400 text-right">{memo.length}/200</p>
         </div>
+
+        {/* 計算値プレビュー */}
+        {(weight || bodyFat) && (() => {
+          const w = weight ? parseFloat(weight) : null
+          const f = bodyFat ? parseFloat(bodyFat) : null
+          const bmi    = w && user.height ? calcBMI(w, user.height) : null
+          const bmInfo = bmi ? bmiInfo(bmi) : null
+          const bmr    = w && user.height && user.age && user.gender
+            ? calcBMR(w, user.height, user.age, user.gender) : null
+          const bAge   = f && bmi && user.age && user.gender
+            ? calcBodyAge(f, bmi, user.age, user.gender) : null
+
+          return (
+            <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+              <p className="text-xs font-semibold text-gray-500 mb-1">計算値プレビュー</p>
+              <div className="grid grid-cols-3 gap-2">
+                {bmi && (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400">BMI</p>
+                    <p className="font-bold text-green-700">{bmi}</p>
+                    {bmInfo && <p className={`text-xs ${bmInfo.color}`}>{bmInfo.label}</p>}
+                  </div>
+                )}
+                {bmr ? (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400">基礎代謝</p>
+                    <p className="font-bold text-teal-700">{bmr}</p>
+                    <p className="text-xs text-gray-400">kcal</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400">基礎代謝</p>
+                    <p className="text-xs text-gray-300 mt-1">年齢・性別を設定</p>
+                  </div>
+                )}
+                {bAge ? (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400">体年齢</p>
+                    <p className={`font-bold ${user.age && bAge < user.age ? 'text-green-600' : bAge && user.age && bAge > user.age ? 'text-red-500' : 'text-rose-700'}`}>{bAge}歳</p>
+                    {user.age && <p className={`text-xs ${bAge < user.age ? 'text-green-600' : bAge > user.age ? 'text-red-500' : 'text-gray-400'}`}>{bAge < user.age ? `${user.age - bAge}歳若い` : bAge > user.age ? `${bAge - user.age}歳上` : '同年齢'}</p>}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-xs text-gray-400">体年齢</p>
+                    <p className="text-xs text-gray-300 mt-1">年齢・性別を設定</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         <button
           type="submit"
