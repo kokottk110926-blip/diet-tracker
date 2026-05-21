@@ -43,15 +43,15 @@ export default function SettingsPage() {
       goal_fat:    goalBodyFat ? parseFloat(goalBodyFat) : null,
     }
 
-    const { data, error } = await supabase
+    const { data, error: sbError } = await supabase
       .from('users')
       .update(updates)
       .eq('id', user.id)
       .select()
       .single()
 
-    if (error) {
-      setError(`保存に失敗しました: ${error.message}`)
+    if (sbError) {
+      setError(`保存に失敗しました: ${sbError.message}`)
     } else if (data) {
       setError('')
       setUser(data)
